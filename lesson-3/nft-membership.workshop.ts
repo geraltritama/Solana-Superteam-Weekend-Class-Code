@@ -58,11 +58,15 @@ async function checkMembership(
 ): Promise<boolean> {
   try {
     // TODO: Hitung alamat ATA dengan getAssociatedTokenAddressSync(mint, wallet)
+    const ata = getAssociatedTokenAddressSync(mint, wallet)
     // TODO: Ambil info account dengan getAccount(connection, ata)
+    const info = await getAccount (connection, ata) 
     // TODO: Cek apakah Number(info.amount) === 1
+    const isMember = Number(info.amount) === 1
     // TODO: Tampilkan '✅ MEMBER' atau '❌ BUKAN MEMBER'
+    console.log(`${label}: ${isMember ? '✅ MEMBER' : '❌ BUKAN MEMBER'}`)
     // TODO: Return true jika member, false jika bukan
-    return false; // ganti dengan implementasi
+    return isMember; // ganti dengan implementasi
   } catch {
     console.log(`  ${label}: ❌ BUKAN MEMBER (tidak memiliki NFT)`);
     return false;
@@ -115,11 +119,11 @@ async function main() {
   console.log('\n--- Langkah 1: Setup Umi ---');
 
   // TODO: Buat instance Umi:
-  //   const umi = createUmi(clusterApiUrl('devnet')).use(mplTokenMetadata())
+  const umi = createUmi(clusterApiUrl('devnet')).use(mplTokenMetadata())
   // TODO: Konversi secretKey walletA ke format Umi Keypair:
-  //   const umiKeypair = umi.eddsa.createKeypairFromSecretKey(walletA.secretKey)
+  const umiKeypair = umi.eddsa.createKeypairFromSecretKey(walletA.secretKey)
   // TODO: Set identity Umi:
-  //   umi.use(keypairIdentity(umiKeypair))
+  umi.use(keypairIdentity(umiKeypair))
 
   console.log('Umi siap dengan identity: Wallet A');
 
@@ -132,21 +136,26 @@ async function main() {
   console.log('Minting NFT... (bisa memakan waktu beberapa detik)');
 
   // TODO: Buat signer untuk mint baru:
-  //   const mintSigner = generateSigner(umi)
+  const mintSigner = generateSigner(umi)
   // TODO: Mint NFT:
-  //   await createNft(umi, {
-  //     mint: mintSigner,
-  //     name: 'Membership NFT',
-  //     symbol: 'MEMBER',
-  //     uri: NFT_METADATA_URI,
-  //     sellerFeeBasisPoints: percentAmount(0),
-  //     isMutable: false,
-  //   }).sendAndConfirm(umi)
+    await createNft(umi, {
+      mint: mintSigner,
+      name: 'Membership NFT',
+      symbol: 'MEMBER',
+      uri: NFT_METADATA_URI,
+      sellerFeeBasisPoints: percentAmount(0),
+      isMutable: false,
+    }).sendAndConfirm(umi)
   // TODO: Konversi mint address ke web3.js PublicKey:
-  //   const nftMintWeb3 = toWeb3JsPublicKey(mintSigner.publicKey)
+  const nftMintWeb3 = toWeb3JsPublicKey(mintSigner.publicKey)
   // TODO: Tampilkan nftMintWeb3.toBase58() dan link explorer devnet
 
   console.log('✅ NFT berhasil di-mint!');
+  console.log('  Mint addr:', nftMintWeb3.toBase58());
+  console.log(
+    '  Explorer :',
+    `https://explorer.solana.com/address/${nftMintWeb3.toBase58()}?cluster=devnet`
+  );
 
   // ─────────────────────────────────────────────────────────────────────────
   // Langkah 3 — Cek Keanggotaan (Sebelum Transfer)
@@ -155,7 +164,9 @@ async function main() {
   console.log('\n--- Langkah 3: Cek Keanggotaan (Sebelum Transfer) ---');
 
   // TODO: Panggil checkMembership(walletA.publicKey, nftMintWeb3, 'Wallet A')
+  await checkMembership(walletA.publicKey, nftMintWeb3, 'Wallet A');
   // TODO: Panggil checkMembership(walletB.publicKey, nftMintWeb3, 'Wallet B')
+  await checkMembership(walletB.publicKey, nftMintWeb3, 'Wallet B');
 
   // ─────────────────────────────────────────────────────────────────────────
   // Langkah 4 — Transfer NFT ke Wallet B
@@ -166,13 +177,13 @@ async function main() {
   console.log('Mentransfer NFT... (bisa memakan waktu beberapa detik)');
 
   // TODO: Transfer NFT:
-  //   await transferV1(umi, {
-  //     mint: mintSigner.publicKey,          // Umi PublicKey
-  //     authority: umi.identity,              // Signer (walletA)
-  //     tokenOwner: umi.identity.publicKey,   // Pemilik saat ini (walletA)
-  //     destinationOwner: umiPublicKey(walletB.publicKey.toBase58()), // Penerima
-  //     tokenStandard: TokenStandard.NonFungible,
-  //   }).sendAndConfirm(umi)
+    await transferV1(umi, {
+      mint: mintSigner.publicKey,          // Umi PublicKey
+      authority: umi.identity,              // Signer (walletA)
+      tokenOwner: umi.identity.publicKey,   // Pemilik saat ini (walletA)
+      destinationOwner: umiPublicKey(walletB.publicKey.toBase58()), // Penerima
+      tokenStandard: TokenStandard.NonFungible,
+    }).sendAndConfirm(umi)
 
   console.log('✅ NFT berhasil ditransfer ke Wallet B!');
 
@@ -183,7 +194,9 @@ async function main() {
   console.log('\n--- Langkah 5: Cek Keanggotaan (Setelah Transfer) ---');
 
   // TODO: Panggil checkMembership untuk walletA (seharusnya ❌ sekarang)
+  await checkMembership(walletA.publicKey, nftMintWeb3, 'Wallet A');
   // TODO: Panggil checkMembership untuk walletB (seharusnya ✅ sekarang)
+  await checkMembership(walletB.publicKey, nftMintWeb3, 'Wallet B');
 
   console.log('\nWorkshop selesai!');
 }
