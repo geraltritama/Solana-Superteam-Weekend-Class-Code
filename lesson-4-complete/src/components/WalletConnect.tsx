@@ -14,7 +14,13 @@
 // ============================================================
 
 import { useWallet } from '@solana/wallet-adapter-react';
-import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
+/* import { WalletMultiButton } from '@solana/wallet-adapter-react-ui'; */
+// Ganti dengan:
+import dynamic from 'next/dynamic';
+const WalletMultiButton = dynamic(
+  () => import('@solana/wallet-adapter-react-ui').then(mod => mod.WalletMultiButton),
+  { ssr: false }
+);
 
 export default function WalletConnect() {
   // Hook dari wallet-adapter — beri kita info dan kontrol wallet

@@ -38,10 +38,12 @@ export default function BalanceDisplay() {
     try {
       // TODO: Panggil connection.getBalance(publicKey) untuk mendapat saldo dalam lamports
       // Hint: const lamports = await connection.getBalance(publicKey);
+      const lamports = await connection.getBalance(publicKey);
 
       // TODO: Konversi lamports ke SOL, lalu simpan ke state
       // Hint: setBalance(lamports / LAMPORTS_PER_SOL);
       // Note: LAMPORTS_PER_SOL = 1_000_000_000 (sudah diimport di atas)
+      
     } catch (err) {
       console.error('Gagal mengambil saldo:', err);
       setError('Gagal memuat saldo. Periksa koneksi internet kamu.');

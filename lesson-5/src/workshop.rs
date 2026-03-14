@@ -29,7 +29,9 @@ mod state {
 
         // TODO A1: Tambahkan dua field berikut dengan tipe yang tepat:
         //   - token_offered_amount  — bilangan bulat tanpa negatif, ukuran besar
+        pub token_offered_amount: u64,
         //   - token_wanted_amount   — sama dengan di atas
+        pub token_wanted_amount: u64,
         //
         // Hint: di Solana, jumlah token disimpan sebagai `u64`
         // (unsigned 64-bit integer, range 0 sampai ~18 triliun)
@@ -51,14 +53,19 @@ mod state {
             //
             // Atau gunakan shorthand kalau nama variabel sama dengan nama field:
             //   EscrowOffer { id, maker: maker.to_string(), ... }
-            todo!("Isi struct EscrowOffer baru")
+            EscrowOffer {
+                id, 
+                maker: maker.to_string(),
+                token_offered_amount: offered,
+                token_wanted_amount: wanted,
+            }
         }
 
         /// Return true kalau offer ini valid (kedua jumlah harus > 0).
         pub fn is_valid(&self) -> bool {
             // TODO B2: Return true kalau token_offered_amount DAN token_wanted_amount
             // keduanya lebih dari 0. Gunakan `&&` untuk AND.
-            todo!("Cek validitas offer")
+            self.token_offered_amount > 0 && self.token_wanted_amount > 0
         }
 
         /// Buat string deskripsi offer.
@@ -67,13 +74,16 @@ mod state {
             // "Offer #1: Alice menawarkan 100 token, meminta 50 token"
             //
             // Hint: format!("teks {} dan {}", nilai1, nilai2)
-            todo!("Format deskripsi offer")
+            format!(
+                "Offer #{}: {} menawarkan {} token, meminta {} token",
+                self.id, self.maker, self.token_offered_amount, self.token_wanted_amount
+            )
         }
     }
 }
 
 // ---------------------------------------------------------------------------
-// MODULE: errors
+// MODULE: errors — kode error kustom (mirip #[error_code] di Anchor)
 // ---------------------------------------------------------------------------
 mod errors {
     /// Kode error untuk escrow program.
@@ -84,7 +94,8 @@ mod errors {
     #[derive(Debug)]
     pub enum EscrowError {
         InvalidAmount,
-
+        Unauthorized,
+        OfferNotFound,
         // TODO C1: Tambahkan dua variant lagi:
         //   - Unauthorized  — untuk aksi yang tidak diizinkan
         //   - OfferNotFound — untuk offer yang tidak ditemukan
@@ -100,7 +111,17 @@ mod errors {
             //       EscrowError::Unauthorized  => write!(f, "pesan error ..."),
             //       EscrowError::OfferNotFound => write!(f, "pesan error ..."),
             //   }
-            todo!("Tulis match untuk semua variant EscrowError")
+            match self {
+                EscrowError::InvalidAmount => {
+                    write!(f, "Jumlah token tidak valid (harus lebih dari 0)")
+                }
+                EscrowError::Unauthorized => {
+                    write!(f, "Tidak punya akses untuk operasi ini")
+                }
+                EscrowError::OfferNotFound => {
+                    write!(f, "Offer tidak ditemukan")
+                }
+            }
         }
     }
 }
@@ -119,9 +140,15 @@ mod instructions {
     /// Kita tidak pernah memindahkan (move) ownership sebuah account — hanya meminjam.
     pub fn validate_offer(offer: &EscrowOffer) -> Result<(), EscrowError> {
         // TODO D1: Return Err(EscrowError::InvalidAmount) kalau token_offered_amount == 0
+        if offer.token_offered_amount == 0 {
+            return Err(EscrowError::InvalidAmount);
+        }
         // TODO D2: Return Err(EscrowError::InvalidAmount) kalau token_wanted_amount == 0
+        if offer.token_wanted_amount == 0 {
+            return Err(EscrowError::InvalidAmount);
+        }
         // TODO D3: Return Ok(()) kalau semua valid
-        todo!("Validasi offer")
+        Ok(())
     }
 
     /// Buat offer baru setelah validasi.
@@ -145,8 +172,7 @@ mod instructions {
 
         // TODO D4: Panggil validate_offer(&offer) dengan operator `?`
         // Hint: validate_offer(&offer)?;
-        todo!("Validasi dengan operator ?");
-
+        validate_offer(&offer)?;
         Ok(offer)
     }
 
@@ -157,10 +183,13 @@ mod instructions {
     /// memindahkan ownershipnya.
     pub fn cancel_offer(offer: &EscrowOffer, caller: &str) -> Result<(), EscrowError> {
         // TODO E1: Return Err(EscrowError::Unauthorized) kalau offer.maker != caller
+        if offer.maker != caller {
+            return Err(EscrowError::Unauthorized);
+        }
         // TODO E2: Return Ok(()) kalau caller adalah maker
+        Ok(())
         //
         // Hint: String comparison: offer.maker != caller
-        todo!("Cek authorization")
     }
 
     /// Cari offer berdasarkan ID dari sebuah slice.
@@ -173,9 +202,9 @@ mod instructions {
     /// Slice reference memungkinkan kita membaca list tanpa mengambil ownershipnya.
     pub fn find_offer(offers: &[EscrowOffer], id: u64) -> Option<&EscrowOffer> {
         // TODO D5: Gunakan offers.iter().find() untuk mencari offer dengan id yang cocok
+        offers.iter().find(|o| o.id == id)
         //
         // Hint: offers.iter().find(|o| o.id == id)
-        todo!("Cari offer berdasarkan id")
     }
 }
 
@@ -203,7 +232,7 @@ fn main() {
     // TODO A2: Deklarasikan `saldo` dengan nilai 5_000_000 dan tipe u64.
     //          Tambahkan `mut` karena nilai saldo akan kita kurangi di bawah.
     //          Contoh: let mut nama_variabel: tipe = nilai;
-    let saldo: u64 = 5_000_000; // ← SALAH: tambahkan `mut`
+    let mut saldo: u64 = 5_000_000; // ← SALAH: tambahkan `mut`
 
     let nama: &str = "Budi"; // &str = pinjam string literal, tidak perlu alokasi heap
     let aktif: bool = true;
@@ -216,6 +245,7 @@ fn main() {
     // TODO A3: Kurangi saldo dengan harga menggunakan operator -=
     //          Baris ini akan compile error sampai kamu tambah `mut` di atas.
     // saldo -= harga;
+    saldo -= harga; // bisa karena `saldo` dideklarasikan `mut`
 
     println!("Saldo setelah bayar: {} lamports\n", saldo);
 
@@ -229,7 +259,8 @@ fn main() {
         Ok(o) => {
             // TODO B4: Panggil o.describe() dan o.is_valid() dan tampilkan hasilnya
             // Hint: println!("{}", o.describe());
-            todo!("Tampilkan deskripsi dan validitas offer");
+            println!("{}", o.describe());
+            println!("Valid: {}\n", o.is_valid());
             o
         }
         Err(e) => {
@@ -245,10 +276,12 @@ fn main() {
 
     // Coba buat offer dengan token_offered_amount = 0 — harus ditolak!
     match make_offer(2, "Bob", 0, 50) {
-        Ok(_) => println!("Offer dibuat (tidak seharusnya sampai sini)"),
         // TODO C3: Tambahkan arm untuk EscrowError::InvalidAmount
         //          dan cetak pesan yang sesuai
-        Err(e) => println!("Error tidak dikenal: {}", e),
+        Ok(_) => println!("Offer dibuat (tidak seharusnya sampai sini)"),
+        Err(EscrowError::InvalidAmount) => println!("Ditolak: jumlah token tidak valid"),
+        Err(EscrowError::Unauthorized) => println!("Ditolak: tidak punya akses"),
+        Err(EscrowError::OfferNotFound) => println!("Offer tidak ditemukan"),
     }
     println!();
 
@@ -261,6 +294,7 @@ fn main() {
 
     // `find_offer` mengembalikan Option<&EscrowOffer>
     // Gunakan `if let` untuk unwrap dengan aman
+    
 
     // TODO D6: Gunakan `if let Some(found) = find_offer(&offers, 1)` untuk
     //          menampilkan deskripsi offer yang ditemukan.
@@ -271,7 +305,9 @@ fn main() {
     //   } else {
     //       // kalau None
     //   }
-    todo!("Gunakan if let untuk find_offer");
+    if let Some(found) = find_offer(&offers, 1) {
+        println!("Ditemukan: {}", found.describe());
+    }
 
     // Cari offer yang tidak ada (id = 99) — hasilnya None
     let missing = find_offer(&offers, 99);
@@ -281,8 +317,13 @@ fn main() {
     //          - "tidak ada" kalau None
     //
     // Hint: missing.map(|o| o.describe()).unwrap_or_else(|| "tidak ada".to_string())
-    let label: String = todo!("map dan unwrap_or_else");
+    let label = missing
+        .map(|o| o.describe())
+        .unwrap_or_else(|| "tidak ada".to_string());
     println!("Offer ID 99: {}\n", label);
+    
+    // let label: String = todo!("map dan unwrap_or_else");
+    // println!("Offer ID 99: {}\n", label);
 
     // -------------------------------------------------------------------------
     // Section E: References dan Borrowing (pola CPI di Anchor)
@@ -295,13 +336,20 @@ fn main() {
     // TODO E3: Panggil cancel_offer(&offers[0], "Alice") dan handle hasilnya
     //          - Ok(())   → cetak "Alice berhasil cancel offer-nya"
     //          - Err(e)   → cetak error message
-    todo!("Cancel offer sebagai Alice");
+    match cancel_offer(&offers[0], "Alice") {
+        Ok(()) => println!("Alice berhasil cancel offer-nya"),
+        Err(e) => println!("Error: {}", e),
+    }
 
     // TODO E4: Panggil cancel_offer(&offers[0], "Charlie") dan handle hasilnya
     //          - Ok(())                        → cetak "(tidak seharusnya)"
     //          - Err(EscrowError::Unauthorized) → cetak "Charlie ditolak: bukan pemilik offer"
     //          - Err(e)                        → cetak error message lainnya
-    todo!("Cancel offer sebagai Charlie");
+    match cancel_offer(&offers[0], "Charlie") {
+        Ok(()) => println!("Charlie berhasil cancel (tidak seharusnya)"),
+        Err(EscrowError::Unauthorized) => println!("Charlie ditolak: bukan pemilik offer"),
+        Err(e) => println!("Error: {}", e),
+    }
 
     println!("\n=== Selesai! ===");
     println!("Minggu depan: struct ini jadi on-chain account dengan Anchor.");
