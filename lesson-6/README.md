@@ -9,34 +9,51 @@ Di lesson ini kita akan membangun **escrow program** menggunakan Anchor. Escrow 
 - Lesson 5 sudah selesai (Rust basics: structs, enums, Option/Result, ownership, impl blocks)
 - Rust dan Cargo terinstall: [https://rustup.rs](https://rustup.rs)
 - Solana CLI terinstall: [https://docs.solana.com/cli/install-solana-cli-tools](https://docs.solana.com/cli/install-solana-cli-tools)
-- Anchor CLI versi 0.30.1 terinstall:
+- Anchor CLI versi 0.32.1 terinstall:
   ```bash
-  cargo install --git https://github.com/coral-xyz/anchor anchor-cli --tag v0.30.1 --locked
+  cargo install --git https://github.com/coral-xyz/anchor anchor-cli --tag v0.32.1 --locked
   ```
 - Node.js + Yarn terinstall
-- Surfpool atau validator lokal untuk menjalankan test
+- [Surfpool](https://github.com/txtx/surfpool) terinstall untuk menjalankan localnet
 
 ---
 
-## Instalasi
+## Setup & Menjalankan
+
+### Langkah 1 — Install dependensi
 
 ```bash
 cd lesson-6
 yarn install
+```
+
+### Langkah 2 — Build program
+
+```bash
 anchor build
 ```
 
----
+### Langkah 3 — Jalankan Surfpool
 
-## Cara Menjalankan
-
-Jalankan validator lokal (surfpool atau `solana-test-validator`), lalu:
+Buka terminal baru dan jalankan surfpool sebagai localnet validator:
 
 ```bash
-anchor test
+surfpool start
 ```
 
-Anchor akan build program, deploy ke localnet, dan menjalankan semua test TypeScript secara otomatis.
+Surfpool akan berjalan di `http://127.0.0.1:8899`. Biarkan terminal ini tetap terbuka selama testing.
+
+### Langkah 4 — Jalankan test
+
+Kembali ke terminal pertama, lalu:
+
+```bash
+anchor test --skip-local-validator
+```
+
+Flag `--skip-local-validator` memberitahu Anchor untuk tidak menjalankan validator sendiri — kita sudah punya surfpool yang berjalan.
+
+> **Catatan:** Jika kamu lebih suka menggunakan `solana-test-validator` standar, jalankan `solana-test-validator` di terminal terpisah dan gunakan `anchor test --skip-local-validator` yang sama.
 
 ---
 
