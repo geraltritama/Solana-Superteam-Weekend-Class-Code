@@ -1,0 +1,19 @@
+[features]
+seeds = true
+skip-lint = false
+
+[programs.localnet]
+escrow = "Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS"
+
+[registry]
+url = "https://api.apr.dev"
+
+[provider]
+cluster = "http://127.0.0.1:8899"
+wallet = "~/.config/solana/id.json"
+
+[scripts]
+test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"
+
+[test]
+startup_wait = 5000
