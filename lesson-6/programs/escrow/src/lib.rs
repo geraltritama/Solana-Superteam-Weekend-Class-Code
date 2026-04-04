@@ -2,7 +2,7 @@ use anchor_lang::prelude::*;
 use anchor_spl::{
     associated_token::AssociatedToken,
     token::{
-        self, close_account, transfer, CloseAccount, Mint, Token, TokenAccount, Transfer,
+        close_account, transfer, CloseAccount, Mint, Token, TokenAccount, Transfer,
     },
 };
 
@@ -42,7 +42,7 @@ pub mod escrow {
         // so only the program itself (via PDA signing) can move tokens out.
         transfer(
             CpiContext::new(
-                ctx.accounts.token_program.to_account_info(),
+                Token::id(),
                 Transfer {
                     from: ctx.accounts.maker_ata_a.to_account_info(),
                     to: ctx.accounts.vault.to_account_info(),
@@ -76,7 +76,7 @@ pub mod escrow {
         // The taker pays the maker the agreed amount of token_b.
         transfer(
             CpiContext::new(
-                ctx.accounts.token_program.to_account_info(),
+                Token::id(),
                 Transfer {
                     from: ctx.accounts.taker_ata_b.to_account_info(),
                     to: ctx.accounts.maker_ata_b.to_account_info(),
@@ -92,7 +92,7 @@ pub mod escrow {
         // the Token program, authorizing the transfer from the vault it controls.
         transfer(
             CpiContext::new_with_signer(
-                ctx.accounts.token_program.to_account_info(),
+                Token::id(),
                 Transfer {
                     from: ctx.accounts.vault.to_account_info(),
                     to: ctx.accounts.taker_ata_a.to_account_info(),
@@ -106,7 +106,7 @@ pub mod escrow {
         // Step 3: Close the vault ATA to reclaim its rent lamports.
         // The rent goes back to the maker since they paid to open the vault.
         close_account(CpiContext::new_with_signer(
-            ctx.accounts.token_program.to_account_info(),
+            Token::id(),
             CloseAccount {
                 account: ctx.accounts.vault.to_account_info(),
                 destination: ctx.accounts.maker.to_account_info(),
@@ -138,7 +138,7 @@ pub mod escrow {
         // Transfer all token_a back from the vault to the maker's ATA.
         transfer(
             CpiContext::new_with_signer(
-                ctx.accounts.token_program.to_account_info(),
+                Token::id(),
                 Transfer {
                     from: ctx.accounts.vault.to_account_info(),
                     to: ctx.accounts.maker_ata_a.to_account_info(),
@@ -151,7 +151,7 @@ pub mod escrow {
 
         // Close the vault ATA, returning its rent to the maker.
         close_account(CpiContext::new_with_signer(
-            ctx.accounts.token_program.to_account_info(),
+            Token::id(),
             CloseAccount {
                 account: ctx.accounts.vault.to_account_info(),
                 destination: ctx.accounts.maker.to_account_info(),
