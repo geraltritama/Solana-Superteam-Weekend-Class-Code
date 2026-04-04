@@ -232,10 +232,10 @@ pub struct Take<'info> {
     pub maker: SystemAccount<'info>,
 
     /// Mint of token_a — what the taker will receive.
-    pub mint_a: Account<'info, Mint>,
+    pub mint_a: Box<Account<'info, Mint>>,
 
     /// Mint of token_b — what the taker must provide.
-    pub mint_b: Account<'info, Mint>,
+    pub mint_b: Box<Account<'info, Mint>>,
 
     /// Taker's ATA for token_a. Created if it doesn't exist yet.
     #[account(
@@ -244,7 +244,7 @@ pub struct Take<'info> {
         associated_token::mint = mint_a,
         associated_token::authority = taker,
     )]
-    pub taker_ata_a: Account<'info, TokenAccount>,
+    pub taker_ata_a: Box<Account<'info, TokenAccount>>,
 
     /// Taker's ATA for token_b. Must have sufficient balance to pay maker.
     #[account(
@@ -252,7 +252,7 @@ pub struct Take<'info> {
         associated_token::mint = mint_b,
         associated_token::authority = taker,
     )]
-    pub taker_ata_b: Account<'info, TokenAccount>,
+    pub taker_ata_b: Box<Account<'info, TokenAccount>>,
 
     /// Maker's ATA for token_b. Created if it doesn't exist yet.
     /// The maker will receive token_b here.
@@ -262,7 +262,7 @@ pub struct Take<'info> {
         associated_token::mint = mint_b,
         associated_token::authority = maker,
     )]
-    pub maker_ata_b: Account<'info, TokenAccount>,
+    pub maker_ata_b: Box<Account<'info, TokenAccount>>,
 
     /// The escrow state PDA. Anchor verifies:
     /// - has_one = maker    → escrow.maker must match the maker account passed in
@@ -286,7 +286,7 @@ pub struct Take<'info> {
         associated_token::mint = mint_a,
         associated_token::authority = escrow,
     )]
-    pub vault: Account<'info, TokenAccount>,
+    pub vault: Box<Account<'info, TokenAccount>>,
 
     pub associated_token_program: Program<'info, AssociatedToken>,
     pub token_program: Program<'info, Token>,
